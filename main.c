@@ -53,6 +53,11 @@ int main(int argc, char **argv) {
   renderer = SDL_CreateRenderer(window, -1, 0);
 
   int **world = world_random_create();
+
+  Uint64 lastTime = 0;
+  int speed = 0;
+  int paused = 0;
+  int step = 0;
   
   while (!loopShouldStop) {
     
@@ -61,15 +66,38 @@ int main(int argc, char **argv) {
       switch(event.type) {
       case SDL_QUIT:
 	loopShouldStop = SDL_TRUE;
+	break;
+      case SDL_KEYDOWN:
+	if (event.key.repeat==0 && event.key.keysym.sym==SDLK_EQUALS && speed >= SPEED_INTERVAL) {
+	  speed -= SPEED_INTERVAL;
+	  printf("Current speed: %d\n", speed);
+	} else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_MINUS) {
+	  speed += SPEED_INTERVAL;
+	  printf("Current speed: %d\n", speed);
+	} else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_n)
+	  world = world_random_create();
+	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_SPACE)
+	  paused = !paused;
+	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_s) {
+	  paused = 1;
+	  step = 1;
+	} else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_1)
+	  speed = 220;
+	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_0)
+	  speed = 0;
       }
     }
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-    SDL_RenderClear(renderer);
-    draw_world(world, renderer);
-    SDL_RenderPresent(renderer);
-    //SDL_Delay(10000);
-    world = world_next(world);
+    Uint64 currentTime = SDL_GetTicks64();
+    if ((currentTime > lastTime + speed && !paused) || step) {
+      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+      SDL_RenderClear(renderer);
+      draw_world(world, renderer);
+      SDL_RenderPresent(renderer);
+      world = world_next(world);
+      lastTime = currentTime;
+      if (step) step=0;
+    }
   }
 
   SDL_DestroyRenderer(renderer);
