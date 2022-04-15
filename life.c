@@ -54,6 +54,29 @@ int** world_random_create() {
   return world;
 }
 
+int** world_empty_create() {
+  int **world = (int **)malloc(sizeof(int *) * WORLD_WIDTH);
+
+  int x, y;
+  for (x=0; x<WORLD_WIDTH; x++) {
+    int *row = (int *)malloc(sizeof(int) * WORLD_HEIGHT);
+    world[x] = row;
+    for (y=0; y<WORLD_HEIGHT; y++) {
+      world[x][y] = 0;
+    }
+  }
+
+  return world;
+}
+
+void world_destroy(int **world) {
+  int x;
+  for (x=0; x<WORLD_WIDTH; x++) {
+    free(world[x]);
+  }
+  free(world);
+}
+
 int** world_next(int **world) {
   int **new_world = (int**)malloc(sizeof(int *) * WORLD_WIDTH);
 
@@ -66,9 +89,5 @@ int** world_next(int **world) {
     }
   }
 
-  for (x=0; x<WORLD_WIDTH; x++) {
-    free(world[x]);
-  }
-  free(world);
   return new_world;
 }
