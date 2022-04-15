@@ -8,8 +8,9 @@
 
 #define HISTORY_LENGTH 100
 
-int** world_random_create();
-int** world_empty_create();
-void world_destroy();
-int** world_next(int **);
+int **life_init();
+int **world_next(int **);
+int **world_new();
 void world_print(int **world);
+int **history_backwards();
+int **history_forwards();

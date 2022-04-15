@@ -33,23 +33,6 @@ void draw(int **world, SDL_Renderer *renderer) {
   SDL_RenderPresent(renderer);
  }
 
-int ***init_history() {
-  int ***history = (int***)malloc(sizeof(int **) * HISTORY_LENGTH);
-  int n;
-  for (n=0; n<HISTORY_LENGTH; n++)
-    history[n] = world_empty_create();
-  return history;
-}
-
-void shift_history(int ***history, int **world) {
-  world_destroy(history[0]);
-  int n;
-  for (n=0; n<HISTORY_LENGTH-1; n++) {
-    history[n] = history[n+1];
-  }
-  history[HISTORY_LENGTH-1] = world;
-}
-
 int main(int argc, char **argv) {
 
   SDL_Window* window = NULL;
@@ -76,14 +59,12 @@ int main(int argc, char **argv) {
 
   renderer = SDL_CreateRenderer(window, -1, 0);
 
-  int ***history = init_history();
-  int **world = world_random_create();
+  int **world = life_init();
 
   Uint64 lastTime = 0;
   int speed = 0;
   int paused = 0;
   int step = 0;
-  int history_pos = 0;
   
   while (!loopShouldStop) {
     
@@ -99,7 +80,7 @@ int main(int argc, char **argv) {
 	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_MINUS)
 	  speed += SPEED_INTERVAL;
 	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_n)
-	  world = world_random_create();
+	  world = world_new();
 	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_SPACE)
 	  paused = !paused;
 	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_s) {
@@ -110,19 +91,10 @@ int main(int argc, char **argv) {
 	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_0)
 	  speed = 0;
 	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_LEFT) {
-	  if (history_pos < HISTORY_LENGTH) {
-	    history_pos++;
-	    draw(history[HISTORY_LENGTH - history_pos], renderer);
-	  }
+	  draw(history_backwards(), renderer);
 	  paused = 1;
 	} else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_RIGHT) {
-	  if (history_pos > 1) {
-	    history_pos--;
-	    draw(history[HISTORY_LENGTH - history_pos], renderer);
-	  } else {
-	    draw(world, renderer);
-	    history_pos = 0;
-	  }
+	  draw(history_forwards(), renderer);
 	  paused = 1;
 	}
       }
@@ -130,12 +102,10 @@ int main(int argc, char **argv) {
 
     Uint64 currentTime = SDL_GetTicks64();
     if ((currentTime > lastTime + speed && !paused) || step) {
-      shift_history(history, world);
       world = world_next(world);
       draw(world, renderer);
       lastTime = currentTime;
       if (step) step = 0;
-      history_pos = 0;
     }
   }
 

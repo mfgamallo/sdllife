@@ -3,6 +3,9 @@
 #include<time.h>
 #include"life.h"
 
+int ***history;
+int history_pos;
+
 void world_print(int **world) {
   int x, y;
   for (x=0; x<WORLD_WIDTH; x++) {
@@ -69,12 +72,31 @@ int** world_empty_create() {
   return world;
 }
 
+int **life_init() {
+  history_pos = 0;
+  history = (int***)malloc(sizeof(int **) * HISTORY_LENGTH);
+  int n;
+  for (n=0; n<HISTORY_LENGTH-1; n++)
+    history[n] = world_empty_create();
+  history[HISTORY_LENGTH-1] = world_random_create();
+  return history[HISTORY_LENGTH-1];
+}
+
 void world_destroy(int **world) {
   int x;
   for (x=0; x<WORLD_WIDTH; x++) {
     free(world[x]);
   }
   free(world);
+}
+
+void shift_history(int **world) {
+  world_destroy(history[0]);
+  int n;
+  for (n=0; n<HISTORY_LENGTH-1; n++) {
+    history[n] = history[n+1];
+  }
+  history[HISTORY_LENGTH-1] = world;
 }
 
 int** world_next(int **world) {
@@ -89,5 +111,29 @@ int** world_next(int **world) {
     }
   }
 
+  shift_history(new_world);
+  history_pos = 0;
+
   return new_world;
+}
+
+int** world_new() {
+  int **new_world = world_random_create();
+
+  shift_history(new_world);
+  history_pos = 0;
+
+  return new_world;
+}
+
+int **history_backwards() {
+  if (history_pos < HISTORY_LENGTH - 1)
+    history_pos++;
+  return history[HISTORY_LENGTH - history_pos - 1];
+}
+
+int **history_forwards() {
+  if (history_pos > 0)
+    history_pos--;
+  return history[HISTORY_LENGTH - history_pos - 1];
 }
