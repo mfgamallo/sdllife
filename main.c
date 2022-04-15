@@ -2,6 +2,12 @@
 #include<stdio.h>
 #include"life.h"
 
+int speed;          // Speed at which the world evolves. Lower is faster. 0 = fastest.
+int paused;         // Are we showing a static generation?
+int step;           // Are we advancing step by step?
+
+int **world;        // Current world.
+
 int world_to_screen(int world_n) {
   int screen_n = 1 + world_n * (CELL_SIZE + CELL_GAP);
   return screen_n;
@@ -22,7 +28,6 @@ void draw_world(int **world, SDL_Renderer *renderer) {
 	SDL_RenderFillRect(renderer, &rect);
       }
     }
-
   }
 }
 
@@ -33,12 +38,49 @@ void draw(int **world, SDL_Renderer *renderer) {
   SDL_RenderPresent(renderer);
  }
 
+SDL_bool treat_events(SDL_Renderer *renderer) {
+
+  SDL_bool loopShouldStop = SDL_FALSE;
+  SDL_Event event;
+
+  while(SDL_PollEvent(&event)) {
+    switch(event.type) {
+    case SDL_QUIT:
+      loopShouldStop = SDL_TRUE;
+      break;
+    case SDL_KEYDOWN:
+      if (event.key.repeat==0 && event.key.keysym.sym==SDLK_EQUALS && speed >= SPEED_INTERVAL)
+	speed -= SPEED_INTERVAL;
+      else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_MINUS)
+	speed += SPEED_INTERVAL;
+      else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_n)
+	world = world_new();
+      else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_SPACE)
+	paused = !paused;
+      else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_s) {
+	paused = 1;
+	step = 1;
+      } else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_1)
+	speed = 220;
+      else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_0)
+	speed = 0;
+      else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_LEFT) {
+	draw(history_backwards(), renderer);
+	paused = 1;
+      } else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_RIGHT) {
+	draw(history_forwards(), renderer);
+	paused = 1;
+      }
+    }
+  }
+  
+  return loopShouldStop;
+}
+
 int main(int argc, char **argv) {
 
   SDL_Window* window = NULL;
   SDL_Renderer *renderer = NULL;
-
-  SDL_bool loopShouldStop = SDL_FALSE;
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     printf("Error SDL: %s", SDL_GetError());
@@ -59,47 +101,14 @@ int main(int argc, char **argv) {
 
   renderer = SDL_CreateRenderer(window, -1, 0);
 
-  int **world = life_init();
+  world = life_init();
 
   Uint64 lastTime = 0;
-  int speed = 0;
-  int paused = 0;
-  int step = 0;
+  speed = 0;
+  paused = 0;
+  step = 0;
   
-  while (!loopShouldStop) {
-    
-    SDL_Event event;
-    while(SDL_PollEvent(&event)) {
-      switch(event.type) {
-      case SDL_QUIT:
-	loopShouldStop = SDL_TRUE;
-	break;
-      case SDL_KEYDOWN:
-	if (event.key.repeat==0 && event.key.keysym.sym==SDLK_EQUALS && speed >= SPEED_INTERVAL)
-	  speed -= SPEED_INTERVAL;
-	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_MINUS)
-	  speed += SPEED_INTERVAL;
-	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_n)
-	  world = world_new();
-	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_SPACE)
-	  paused = !paused;
-	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_s) {
-	  paused = 1;
-	  step = 1;
-	} else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_1)
-	  speed = 220;
-	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_0)
-	  speed = 0;
-	else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_LEFT) {
-	  draw(history_backwards(), renderer);
-	  paused = 1;
-	} else if (event.key.repeat==0 && event.key.keysym.sym==SDLK_RIGHT) {
-	  draw(history_forwards(), renderer);
-	  paused = 1;
-	}
-      }
-    }
-
+  while (!treat_events(renderer)) {
     Uint64 currentTime = SDL_GetTicks64();
     if ((currentTime > lastTime + speed && !paused) || step) {
       world = world_next(world);
