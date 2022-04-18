@@ -6,16 +6,6 @@
 int ***history;
 int history_pos;
 
-void world_print(int **world) {
-  int x, y;
-  for (x=0; x<WORLD_WIDTH; x++) {
-    for (y=0; y<WORLD_HEIGHT; y++) {
-      printf("%d", world[x][y]);
-    }
-    printf("\n");
-  }
-}
-
 int is_alive(int **world, int x, int y) {
   int alive;
   int neighbours = 0;
@@ -99,7 +89,8 @@ void shift_history(int **world) {
   history[HISTORY_LENGTH-1] = world;
 }
 
-int** world_next(int **world) {
+int** world_next() {
+  int **world = history[HISTORY_LENGTH - 1];
   int **new_world = (int**)malloc(sizeof(int *) * WORLD_WIDTH);
 
   int x, y;
